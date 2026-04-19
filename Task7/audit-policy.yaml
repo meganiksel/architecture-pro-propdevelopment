@@ -1,0 +1,76 @@
+# Kubernetes Audit Policy — PropDevelopment
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  - level: RequestResponse
+    verbs: ["create", "delete", "update", "patch", "get", "list"]
+    resources:
+      - group: ""
+        resources:
+          - pods
+          - secrets
+          - configmaps
+          - serviceaccounts
+      - group: "rbac.authorization.k8s.io"
+        resources:
+          - roles
+          - rolebindings
+          - clusterroles
+          - clusterrolebindings
+
+  - level: RequestResponse
+    verbs: ["create", "delete", "update", "patch"]
+    resources:
+      - group: "constraints.gatekeeper.sh"
+        resources: ["*"]
+      - group: "templates.gatekeeper.sh"
+        resources: ["*"]
+      - group: "networking.k8s.io"
+        resources: ["networkpolicies"]
+
+  - level: Request
+    verbs: ["create"]
+    resources:
+      - group: ""
+        resources:
+          - pods/exec
+          - pods/portforward
+          - pods/attach
+
+  - level: Metadata
+    resources:
+      - group: "*"
+        resources: ["*"]
+
+  # Системные запросы не логируются
+  - level: None
+    users: ["system:kube-proxy"]
+    verbs: ["watch"]
+    resources:
+      - group: ""
+        resources: ["endpoints", "services", "services/status"]
+
+  - level: None
+    users: ["kubelet"]
+    verbs: ["get"]
+    resources:
+      - group: ""
+        resources: ["nodes", "nodes/status"]
+
+  - level: None
+    userGroups: ["system:nodes"]
+    verbs: ["get", "patch", "update"]
+    resources:
+      - group: ""
+        resources: ["nodes", "nodes/status"]
+
+  - level: None
+    users:
+      - system:kube-controller-manager
+      - system:kube-scheduler
+      - system:serviceaccount:kube-system:endpoint-controller
+    verbs: ["get", "update"]
+    namespaces: ["kube-system"]
+    resources:
+      - group: ""
+        resources: ["endpoints"]

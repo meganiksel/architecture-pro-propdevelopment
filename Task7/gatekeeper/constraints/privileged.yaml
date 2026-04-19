@@ -1,0 +1,21 @@
+# Constraint: K8sDenyPrivileged — применяется ко всем namespace кроме системных
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sDenyPrivileged
+metadata:
+  name: deny-privileged-containers
+  annotations:
+    description: "Запрещает privileged: true во всех namespace кроме системных."
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+      - kube-node-lease
+      - gatekeeper-system
+      - cert-manager
+  parameters:
+    message: "Использование privileged: true запрещено политикой безопасности PropDevelopment."
