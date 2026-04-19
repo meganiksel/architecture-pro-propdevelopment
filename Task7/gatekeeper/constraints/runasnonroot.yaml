@@ -1,0 +1,21 @@
+# Constraint: K8sRequireNonRoot — runAsNonRoot, readOnlyRootFilesystem, allowPrivilegeEscalation: false
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequireNonRoot
+metadata:
+  name: require-non-root-and-readonly
+  annotations:
+    description: "Требует runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false."
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+      - kube-node-lease
+      - gatekeeper-system
+      - cert-manager
+  parameters:
+    message: "Контейнеры должны запускаться от непривилегированного пользователя с readOnlyRootFilesystem: true."
