@@ -1,0 +1,16 @@
+# НАРУШЕНИЕ: privileged: true — нарушает PodSecurity restricted/baseline
+# Ожидается: forbidden: violates PodSecurity "restricted:latest"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-privileged
+  namespace: audit-zone
+  labels:
+    app: insecure-demo
+    violation: privileged-container
+spec:
+  containers:
+    - name: nginx
+      image: nginx:latest
+      securityContext:
+        privileged: true

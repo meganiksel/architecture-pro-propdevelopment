@@ -1,0 +1,300 @@
+[
+  {
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "RequestResponse",
+    "auditID": "a1b2c3d4-0001-0001-0001-000000000001",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/kube-system/secrets/default-token-xxxxx",
+    "verb": "get",
+    "user": {
+      "username": "system:serviceaccount:secure-ops:monitoring",
+      "groups": ["system:serviceaccounts", "system:serviceaccounts:secure-ops", "system:authenticated"]
+    },
+    "impersonatedUser": null,
+    "sourceIPs": ["192.168.49.1"],
+    "userAgent": "kubectl/v1.28.0",
+    "objectRef": {
+      "resource": "secrets",
+      "namespace": "kube-system",
+      "name": "default-token-xxxxx",
+      "apiVersion": "v1"
+    },
+    "responseStatus": {
+      "metadata": {},
+      "code": 200
+    },
+    "requestReceivedTimestamp": "2024-01-15T10:00:01.000000Z",
+    "stageTimestamp": "2024-01-15T10:00:01.050000Z",
+    "annotations": {
+      "authorization.k8s.io/decision": "allow",
+      "authorization.k8s.io/reason": "RBAC: allowed by ClusterRoleBinding",
+      "SUSPICIOUS": "ServiceAccount from secure-ops accessing kube-system secrets"
+    }
+  },
+  {
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "RequestResponse",
+    "auditID": "a1b2c3d4-0002-0002-0002-000000000002",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/secure-ops/pods",
+    "verb": "create",
+    "user": {
+      "username": "kubernetes-admin",
+      "groups": ["system:masters", "system:authenticated"]
+    },
+    "sourceIPs": ["192.168.49.1"],
+    "userAgent": "kubectl/v1.28.0",
+    "objectRef": {
+      "resource": "pods",
+      "namespace": "secure-ops",
+      "name": "privileged-pod",
+      "apiVersion": "v1"
+    },
+    "requestObject": {
+      "kind": "Pod",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "privileged-pod",
+        "namespace": "secure-ops"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "pwn",
+            "image": "alpine",
+            "command": ["sleep", "3600"],
+            "securityContext": {
+              "privileged": true
+            }
+          }
+        ],
+        "restartPolicy": "Never"
+      }
+    },
+    "responseStatus": {
+      "metadata": {},
+      "code": 201
+    },
+    "requestReceivedTimestamp": "2024-01-15T10:00:05.000000Z",
+    "stageTimestamp": "2024-01-15T10:00:05.200000Z",
+    "annotations": {
+      "authorization.k8s.io/decision": "allow",
+      "SUSPICIOUS": "Privileged pod created - securityContext.privileged=true",
+      "SEVERITY": "CRITICAL"
+    }
+  },
+  {
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "RequestResponse",
+    "auditID": "a1b2c3d4-0003-0003-0003-000000000003",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/kube-system/pods/coredns-xxxxxxxxx-xxxxx/exec",
+    "verb": "create",
+    "user": {
+      "username": "kubernetes-admin",
+      "groups": ["system:masters", "system:authenticated"]
+    },
+    "sourceIPs": ["192.168.49.1"],
+    "userAgent": "kubectl/v1.28.0",
+    "objectRef": {
+      "resource": "pods",
+      "subresource": "exec",
+      "namespace": "kube-system",
+      "name": "coredns-xxxxxxxxx-xxxxx",
+      "apiVersion": "v1"
+    },
+    "requestObject": {
+      "command": ["cat", "/etc/resolv.conf"],
+      "container": "coredns",
+      "stdin": false,
+      "stdout": true,
+      "stderr": true,
+      "tty": false
+    },
+    "responseStatus": {
+      "metadata": {},
+      "code": 101
+    },
+    "requestReceivedTimestamp": "2024-01-15T10:00:10.000000Z",
+    "stageTimestamp": "2024-01-15T10:00:10.500000Z",
+    "annotations": {
+      "authorization.k8s.io/decision": "allow",
+      "SUSPICIOUS": "kubectl exec into system pod coredns in kube-system namespace",
+      "SEVERITY": "HIGH"
+    }
+  },
+  {
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "RequestResponse",
+    "auditID": "a1b2c3d4-0004-0004-0004-000000000004",
+    "stage": "ResponseComplete",
+    "requestURI": "/apis/rbac.authorization.k8s.io/v1/namespaces/secure-ops/rolebindings",
+    "verb": "create",
+    "user": {
+      "username": "kubernetes-admin",
+      "groups": ["system:masters", "system:authenticated"]
+    },
+    "sourceIPs": ["192.168.49.1"],
+    "userAgent": "kubectl/v1.28.0",
+    "objectRef": {
+      "resource": "rolebindings",
+      "namespace": "secure-ops",
+      "name": "escalate-binding",
+      "apiGroup": "rbac.authorization.k8s.io",
+      "apiVersion": "v1"
+    },
+    "requestObject": {
+      "kind": "RoleBinding",
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "metadata": {
+        "name": "escalate-binding",
+        "namespace": "secure-ops"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "monitoring",
+          "namespace": "secure-ops"
+        }
+      ],
+      "roleRef": {
+        "kind": "ClusterRole",
+        "name": "cluster-admin",
+        "apiGroup": "rbac.authorization.k8s.io"
+      }
+    },
+    "responseStatus": {
+      "metadata": {},
+      "code": 201
+    },
+    "requestReceivedTimestamp": "2024-01-15T10:00:15.000000Z",
+    "stageTimestamp": "2024-01-15T10:00:15.100000Z",
+    "annotations": {
+      "authorization.k8s.io/decision": "allow",
+      "SUSPICIOUS": "RoleBinding created binding ServiceAccount to cluster-admin without approval",
+      "SEVERITY": "CRITICAL",
+      "INCIDENT_TYPE": "PRIVILEGE_ESCALATION"
+    }
+  },
+  {
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "Metadata",
+    "auditID": "a1b2c3d4-0005-0005-0005-000000000005",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/kube-system/configmaps/audit-policy",
+    "verb": "delete",
+    "user": {
+      "username": "kubernetes-admin",
+      "groups": ["system:masters", "system:authenticated"]
+    },
+    "impersonatedUser": {
+      "username": "admin",
+      "groups": ["system:masters"]
+    },
+    "sourceIPs": ["192.168.49.1"],
+    "userAgent": "kubectl/v1.28.0",
+    "objectRef": {
+      "resource": "configmaps",
+      "namespace": "kube-system",
+      "name": "audit-policy",
+      "apiVersion": "v1"
+    },
+    "responseStatus": {
+      "metadata": {},
+      "status": "Failure",
+      "reason": "NotFound",
+      "code": 404
+    },
+    "requestReceivedTimestamp": "2024-01-15T10:00:20.000000Z",
+    "stageTimestamp": "2024-01-15T10:00:20.050000Z",
+    "annotations": {
+      "authorization.k8s.io/decision": "allow",
+      "SUSPICIOUS": "Attempt to delete audit-policy with user impersonation (--as=admin). Covering tracks.",
+      "SEVERITY": "CRITICAL",
+      "INCIDENT_TYPE": "AUDIT_TAMPERING"
+    }
+  },
+  {
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "RequestResponse",
+    "auditID": "a1b2c3d4-0006-0006-0006-000000000006",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/secure-ops/serviceaccounts",
+    "verb": "create",
+    "user": {
+      "username": "kubernetes-admin",
+      "groups": ["system:masters", "system:authenticated"]
+    },
+    "sourceIPs": ["192.168.49.1"],
+    "userAgent": "kubectl/v1.28.0",
+    "objectRef": {
+      "resource": "serviceaccounts",
+      "namespace": "secure-ops",
+      "name": "monitoring",
+      "apiVersion": "v1"
+    },
+    "responseStatus": {
+      "metadata": {},
+      "code": 201
+    },
+    "requestReceivedTimestamp": "2024-01-15T09:59:55.000000Z",
+    "stageTimestamp": "2024-01-15T09:59:55.100000Z",
+    "annotations": {
+      "authorization.k8s.io/decision": "allow",
+      "NOTE": "ServiceAccount monitoring created - later used for privilege escalation"
+    }
+  },
+  {
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "RequestResponse",
+    "auditID": "a1b2c3d4-0007-0007-0007-000000000007",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/secure-ops/pods",
+    "verb": "create",
+    "user": {
+      "username": "kubernetes-admin",
+      "groups": ["system:masters", "system:authenticated"]
+    },
+    "sourceIPs": ["192.168.49.1"],
+    "userAgent": "kubectl/v1.28.0",
+    "objectRef": {
+      "resource": "pods",
+      "namespace": "secure-ops",
+      "name": "attacker-pod",
+      "apiVersion": "v1"
+    },
+    "requestObject": {
+      "kind": "Pod",
+      "metadata": {
+        "name": "attacker-pod",
+        "namespace": "secure-ops"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "attacker-pod",
+            "image": "alpine",
+            "command": ["sleep", "3600"]
+          }
+        ]
+      }
+    },
+    "responseStatus": {
+      "metadata": {},
+      "code": 201
+    },
+    "requestReceivedTimestamp": "2024-01-15T09:59:58.000000Z",
+    "stageTimestamp": "2024-01-15T09:59:58.200000Z",
+    "annotations": {
+      "authorization.k8s.io/decision": "allow",
+      "NOTE": "Pod named 'attacker-pod' created - suspicious naming"
+    }
+  }
+]
